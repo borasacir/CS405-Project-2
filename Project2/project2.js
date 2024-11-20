@@ -168,6 +168,7 @@ class MeshDrawer {
 		if (!u_enableLightingLocation) {
 			console.error("Could not find u_enableLighting uniform in shader.");
 		}
+		
 
 		if (u_lightColorLocation && u_lightPositionLocation && u_enableLightingLocation) {
 			gl.uniform3fv(u_lightColorLocation, [1.0, 1.0, 1.0]);
