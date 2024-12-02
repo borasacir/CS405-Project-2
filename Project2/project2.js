@@ -131,11 +131,8 @@ class MeshDrawer {
 		if (isPowerOf2(img.width) && isPowerOf2(img.height)) {
 			gl.generateMipmap(gl.TEXTURE_2D);
 		} else {
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-       		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-			/*
 			console.error("Task 1: Non power of 2, you should implement this part to accept non power of 2 sized textures");
+			/**
 			 * @Task1 : You should implement this part to accept non power of 2 sized textures
 			 */
 		}
@@ -153,30 +150,8 @@ class MeshDrawer {
 	}
 
 	enableLighting(show) {
-		gl.useProgram(this.prog);
-
-        const u_lightColorLocation = gl.getUniformLocation(this.prog, "u_lightColor");
-		const u_lightPositionLocation = gl.getUniformLocation(this.prog, "u_lightPosition");
-		const u_enableLightingLocation = gl.getUniformLocation(this.prog, "u_enableLighting");
-
-		if (!u_lightColorLocation) {
-			console.error("Could not find u_lightColor uniform in shader.");
-		}
-		if (!u_lightPositionLocation) {
-			console.error("Could not find u_lightPosition uniform in shader.");
-		}
-		if (!u_enableLightingLocation) {
-			console.error("Could not find u_enableLighting uniform in shader.");
-		}
-		
-
-		if (u_lightColorLocation && u_lightPositionLocation && u_enableLightingLocation) {
-			gl.uniform3fv(u_lightColorLocation, [1.0, 1.0, 1.0]);
-			gl.uniform3fv(u_lightPositionLocation, [2.0, 4.0, 5.0]);
-			gl.uniform1i(u_enableLightingLocation, show ? 1 : 0);
-		}
-		/**
 		console.error("Task 2: You should implement the lighting and implement this function ");
+		/**
 		 * @Task2 : You should implement the lighting and implement this function
 		 */
 	}
