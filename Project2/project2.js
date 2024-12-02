@@ -72,7 +72,6 @@ class MeshDrawer {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertPos), gl.STATIC_DRAW);
 
-		// update texture coordinates
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.texbuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
 
@@ -98,7 +97,7 @@ class MeshDrawer {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.texbuffer);
 		gl.enableVertexAttribArray(this.texCoordLoc);
 		gl.vertexAttribPointer(this.texCoordLoc, 2, gl.FLOAT, false, 0, 0);
-
+		
 		/**
 		 * @Task2 : You should update this function to handle the lighting
 		 */
@@ -131,8 +130,12 @@ class MeshDrawer {
 		if (isPowerOf2(img.width) && isPowerOf2(img.height)) {
 			gl.generateMipmap(gl.TEXTURE_2D);
 		} else {
-			console.error("Task 1: Non power of 2, you should implement this part to accept non power of 2 sized textures");
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 			/**
+			 * console.error("Task 1: Non power of 2, you should implement this part to accept non power of 2 sized textures");
 			 * @Task1 : You should implement this part to accept non power of 2 sized textures
 			 */
 		}
@@ -150,15 +153,30 @@ class MeshDrawer {
 	}
 
 	enableLighting(show) {
-		console.error("Task 2: You should implement the lighting and implement this function ");
+		gl.useProgram(this.prog);
+		const lightPosLoc = gl.getUniformLocation(this.prog, 'lightPos');
+		const lightColorLoc = gl.getUniformLocation(this.prog, 'color');
+		const enableLightingLoc = gl.getUniformLocation(this.prog, 'enableLighting');
+		gl.uniform1i(enableLightingLoc, show);
+		const lightPosition = [lightX, lightY, 1];
+		const lightColor = [1, 1, 1];
+
+		gl.uniform3fv(lightPosLoc, lightPosition);
+		gl.uniform3fv(lightColorLoc, lightColor);
+		gl.uniform1i(enableLightingLoc, show);
 		/**
+		 * console.error("Task 2: You should implement the lighting and implement this function ");
 		 * @Task2 : You should implement the lighting and implement this function
 		 */
 	}
 	
 	setAmbientLight(ambient) {
-		console.error("Task 2: You should implement the lighting and implement this function ");
+		gl.useProgram(this.prog);
+		const ambientLightLoc = gl.getUniformLocation(this.prog, 'ambient');
+		gl.uniform1f(ambientLightLoc, ambient);
+
 		/**
+		 * console.error("Task 2: You should implement the lighting and implement this function ");
 		 * @Task2 : You should implement the lighting and implement this function
 		 */
 	}
@@ -221,7 +239,17 @@ const meshFS = `
 			{
 				if(showTex && enableLighting){
 					// UPDATE THIS PART TO HANDLE LIGHTING
-					gl_FragColor = texture2D(tex, v_texCoord);
+					vec3 normal = normalize(v_normal);
+					vec3 lightDir = normalize(lightPos - vec3(gl_FragCoord.xyz));
+					float diff = max(dot(normal, lightDir), 0.0);
+
+					vec3 diffuse = diff * color;
+					vec3 ambientLight = ambient * color;
+
+					vec4 texColor = texture2D(tex, v_texCoord);
+					vec3 result = (ambientLight + diffuse) * texColor.rgb;
+
+					gl_FragColor = vec4(result, texColor.a);
 				}
 				else if(showTex){
 					gl_FragColor = texture2D(tex, v_texCoord);
