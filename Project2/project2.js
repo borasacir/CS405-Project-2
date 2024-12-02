@@ -55,13 +55,12 @@ class MeshDrawer {
 
 		this.vertPosLoc = gl.getAttribLocation(this.prog, 'pos');
 		this.texCoordLoc = gl.getAttribLocation(this.prog, 'texCoord');
-
+		this.specularIntensityLoc = gl.getUniformLocation(this.prog, 'specularIntensity');
 
 		this.vertbuffer = gl.createBuffer();
 		this.texbuffer = gl.createBuffer();
 
 		this.numTriangles = 0;
-
 		/**
 		 * @Task2 : You should initialize the required variables for lighting here
 		 */
@@ -180,8 +179,13 @@ class MeshDrawer {
 		 * @Task2 : You should implement the lighting and implement this function
 		 */
 	}
-}
 
+	setSpecularLight(intensity) {
+		gl.useProgram(this.prog);
+		const specularLightLoc = gl.getUniformLocation(this.prog, 'specularIntensity');
+		gl.uniform1f(specularLightLoc, intensity);
+	}	
+}
 
 function isPowerOf2(value) {
 	return (value & (value - 1)) == 0;
@@ -231,6 +235,7 @@ const meshFS = `
 			uniform vec3 color; 
 			uniform vec3 lightPos;
 			uniform float ambient;
+			uniform float specularIntensity;
 
 			varying vec2 v_texCoord;
 			varying vec3 v_normal;
@@ -246,8 +251,13 @@ const meshFS = `
 					vec3 diffuse = diff * color;
 					vec3 ambientLight = ambient * color;
 
+					vec3 viewDir = normalize(-vec3(gl_FragCoord.xyz));
+					vec3 reflectDir = reflect(-lightDir, normal);
+					float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+					vec3 specular = specularIntensity * spec * color;
+
 					vec4 texColor = texture2D(tex, v_texCoord);
-					vec3 result = (ambientLight + diffuse) * texColor.rgb;
+					vec3 result = (ambientLight + diffuse + specular) * texColor.rgb;
 
 					gl_FragColor = vec4(result, texColor.a);
 				}
