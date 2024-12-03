@@ -158,6 +158,7 @@ class MeshDrawer {
 		const enableLightingLoc = gl.getUniformLocation(this.prog, 'enableLighting');
 		gl.uniform1i(enableLightingLoc, show);
 		const lightPosition = [lightX, lightY, 1];
+		console.log("Updated light position: ", lightPosition);
 		const lightColor = [1, 1, 1];
 
 		gl.uniform3fv(lightPosLoc, lightPosition);
@@ -181,10 +182,11 @@ class MeshDrawer {
 	}
 
 	setSpecularLight(intensity) {
+		console.log("Updating specular light: ", intensity);
 		gl.useProgram(this.prog);
-		const specularLightLoc = gl.getUniformLocation(this.prog, 'specularIntensity');
-		gl.uniform1f(specularLightLoc, intensity);
-	}	
+		gl.uniform1f(this.specularIntensityLoc, intensity);
+	}
+	
 }
 
 function isPowerOf2(value) {
@@ -245,7 +247,7 @@ const meshFS = `
 				if(showTex && enableLighting){
 					// UPDATE THIS PART TO HANDLE LIGHTING
 					vec3 normal = normalize(v_normal);
-					vec3 lightDir = normalize(lightPos - vec3(gl_FragCoord.xyz));
+					vec3 lightDir = normalize(lightPos);
 					float diff = max(dot(normal, lightDir), 0.0);
 
 					vec3 diffuse = diff * color;
@@ -280,5 +282,6 @@ function updateLightPos() {
 	if (keys['ArrowDown']) lightY += translationSpeed;
 	if (keys['ArrowRight']) lightX -= translationSpeed;
 	if (keys['ArrowLeft']) lightX += translationSpeed;
+	console.log("Light position: ", lightX, lightY);
 }
 ///////////////////////////////////////////////////////////////////////////////////
