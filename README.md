@@ -1,5 +1,5 @@
 # Github link:
-https://github.com/borasacir/CS405-Project-2.git
+[text](https://github.com/borasacir/CS405-Project-2.git)
 
 # CS 405 - Project 2
 
