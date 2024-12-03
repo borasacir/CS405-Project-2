@@ -36,5 +36,4 @@ This project implements a WebGL-based renderer with the following features:
 
 - If both textures are uploaded, they blend together for a mixed effect.
 - If only one texture is uploaded, it displays without blending.
-- Make sure the textures are valid image files (e.g., `.jpg`, `.png`).
 
