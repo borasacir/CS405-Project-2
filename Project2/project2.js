@@ -112,40 +112,55 @@ class MeshDrawer {
 
 	// This method is called to set the texture of the mesh.
 	// The argument is an HTML IMG element containing the texture data.
-	setTexture(img) {
-		const texture = gl.createTexture();
-		gl.bindTexture(gl.TEXTURE_2D, texture);
-
-		// You can set the texture image data using the following command.
-		gl.texImage2D(
-			gl.TEXTURE_2D,
-			0,
-			gl.RGB,
-			gl.RGB,
-			gl.UNSIGNED_BYTE,
-			img);
-
-		// Set texture parameters 
-		if (isPowerOf2(img.width) && isPowerOf2(img.height)) {
+	setTexture(img1, img2) {
+		if (!img1 || !img2) {
+			console.error("Both textures must be valid images:", img1, img2);
+			return;
+		}
+	
+		// First texture
+		const texture1 = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, texture1);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img1);
+	
+		if (isPowerOf2(img1.width) && isPowerOf2(img1.height)) {
 			gl.generateMipmap(gl.TEXTURE_2D);
 		} else {
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-			/**
-			 * console.error("Task 1: Non power of 2, you should implement this part to accept non power of 2 sized textures");
-			 * @Task1 : You should implement this part to accept non power of 2 sized textures
-			 */
 		}
-
+	
+		// Second texture
+		const texture2 = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, texture2);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img2);
+	
+		if (isPowerOf2(img2.width) && isPowerOf2(img2.height)) {
+			gl.generateMipmap(gl.TEXTURE_2D);
+		} else {
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		}
+	
 		gl.useProgram(this.prog);
+	
+		// Bind the first texture
 		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, texture);
-		const sampler = gl.getUniformLocation(this.prog, 'tex');
-		gl.uniform1i(sampler, 0);
+		gl.bindTexture(gl.TEXTURE_2D, texture1);
+		const sampler1 = gl.getUniformLocation(this.prog, 'tex1');
+		gl.uniform1i(sampler1, 0);
+	
+		// Bind the second texture
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, texture2);
+		const sampler2 = gl.getUniformLocation(this.prog, 'tex2');
+		gl.uniform1i(sampler2, 1);
 	}
-
+	
 	showTexture(show) {
 		gl.useProgram(this.prog);
 		gl.uniform1i(this.showTexLoc, show);
@@ -229,47 +244,72 @@ const meshVS = `
  * @Task2 : You should update the fragment shader to handle the lighting
  */
 const meshFS = `
-			precision mediump float;
+		precision mediump float;
 
-			uniform bool showTex;
-			uniform bool enableLighting;
-			uniform sampler2D tex;
-			uniform vec3 color; 
-			uniform vec3 lightPos;
-			uniform float ambient;
-			uniform float specularIntensity;
+		uniform bool showTex;           // Flag to indicate whether textures are shown
+		uniform sampler2D tex1;         // First texture sampler
+		uniform sampler2D tex2;         // Second texture sampler
+		uniform vec3 color;             // Base color for lighting
+		uniform vec3 lightPos;          // Position of the light source
+		uniform float ambient;          // Ambient lighting intensity
+		uniform float specularIntensity;// Specular lighting intensity
+		varying vec2 v_texCoord;        // Texture coordinates from vertex shader
+		varying vec3 v_normal;          // Normal vector from vertex shader
 
-			varying vec2 v_texCoord;
-			varying vec3 v_normal;
+		void main()
+		{
+			// Default color for the fragment
+			vec3 finalColor = vec3(0.0);
 
-			void main()
-			{
-				if(showTex && enableLighting){
-					// UPDATE THIS PART TO HANDLE LIGHTING
-					vec3 normal = normalize(v_normal);
-					vec3 lightDir = normalize(lightPos);
-					float diff = max(dot(normal, lightDir), 0.0);
+			// Normalize the interpolated normal
+			vec3 normal = normalize(v_normal);
 
-					vec3 diffuse = diff * color;
-					vec3 ambientLight = ambient * color;
+			// Calculate the direction of the light
+			vec3 lightDir = normalize(lightPos);
 
-					vec3 viewDir = normalize(-vec3(gl_FragCoord.xyz));
-					vec3 reflectDir = reflect(-lightDir, normal);
-					float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-					vec3 specular = specularIntensity * spec * color;
+			// Diffuse lighting
+			float diff = max(dot(normal, lightDir), 0.0);
+			vec3 diffuseLight = diff * color;
 
-					vec4 texColor = texture2D(tex, v_texCoord);
-					vec3 result = (ambientLight + diffuse + specular) * texColor.rgb;
+			// Ambient lighting
+			vec3 ambientLight = ambient * color;
 
-					gl_FragColor = vec4(result, texColor.a);
+			// Specular lighting (Phong reflection model)
+			vec3 viewDir = normalize(vec3(0.0, 0.0, 1.0)); // Assumes the viewer is along the z-axis
+			vec3 reflectDir = reflect(-lightDir, normal);
+			float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+			vec3 specularLight = specularIntensity * spec * color;
+
+			// Combine all lighting components
+			finalColor = diffuseLight + ambientLight + specularLight;
+
+			// Texture blending logic
+			if (showTex) {
+				vec4 color1 = texture2D(tex1, v_texCoord); // Sample first texture
+				vec4 color2 = texture2D(tex2, v_texCoord); // Sample second texture
+
+				// Default blending of two textures
+				vec4 blendedColor = mix(color1, color2, 0.5);
+
+				// Handle cases where only one texture is provided (white fallback logic)
+				if (color1 == vec4(1.0, 1.0, 1.0, 1.0)) {
+					blendedColor = color2;
 				}
-				else if(showTex){
-					gl_FragColor = texture2D(tex, v_texCoord);
+				if (color2 == vec4(1.0, 1.0, 1.0, 1.0)) {
+					blendedColor = color1;
 				}
-				else{
-					gl_FragColor =  vec4(1.0, 0, 0, 1.0);
-				}
-			}`;
+
+				// Multiply blended texture color with the lighting
+				finalColor *= blendedColor.rgb;
+			}
+
+			// Output the final fragment color
+			gl_FragColor = vec4(finalColor, 1.0);
+		}
+
+
+`;
+
 
 // Light direction parameters for Task 2
 var lightX = 1;

@@ -287,6 +287,7 @@ function SetAmbientLight( param )
 
 function SetSpecularLight(param) {
 	meshDrawer.setSpecularLight(parseFloat(param.value) / 100);
+	console.log("Specular Light: " + parseFloat(param.value) / 100);
 	DrawScene();
 }
 
@@ -321,25 +322,100 @@ function LoadObj( param )
 	}
 }
 
-function LoadTexture( param )
-{
-	if ( param.files && param.files[0] ) {
-		var reader = new FileReader();
-		reader.onload = function(e) {
-			var img = new Image();
-			img.src = e.target.result;
-			document.getElementById('texture-img').src = e.target.result;
-			img.onload = function() {
-				meshDrawer.setTexture( img );
-				DrawScene();
-			}
-			console.log(param.files[0])
-		};
-		reader.readAsDataURL( param.files[0] );
-	}
-	meshDrawer.showTexture( true );
-	DrawScene();
+let texture1 = null;
+let texture2 = null;
+
+// Function to handle the first texture
+MeshDrawer.prototype.setTexture = function (img1, img2) {
+    gl.useProgram(this.prog);
+
+    // Create a default texture for when an image is missing
+    const createDefaultTexture = () => {
+        const defaultTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, defaultTexture);
+        const defaultColor = new Uint8Array([255, 255, 255, 255]); // White color
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, defaultColor);
+        return defaultTexture;
+    };
+
+    // First texture
+    let texture1 = img1 ? gl.createTexture() : createDefaultTexture();
+    if (img1) {
+        gl.bindTexture(gl.TEXTURE_2D, texture1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img1);
+        if (isPowerOf2(img1.width) && isPowerOf2(img1.height)) {
+            gl.generateMipmap(gl.TEXTURE_2D);
+        } else {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        }
+    }
+
+    // Second texture
+    let texture2 = img2 ? gl.createTexture() : createDefaultTexture();
+    if (img2) {
+        gl.bindTexture(gl.TEXTURE_2D, texture2);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img2);
+        if (isPowerOf2(img2.width) && isPowerOf2(img2.height)) {
+            gl.generateMipmap(gl.TEXTURE_2D);
+        } else {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        }
+    }
+
+    // Bind the textures
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture1);
+    gl.uniform1i(gl.getUniformLocation(this.prog, 'tex1'), 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, texture2);
+    gl.uniform1i(gl.getUniformLocation(this.prog, 'tex2'), 1);
+};
+
+// Function to handle the first texture
+function LoadTexture(param) {
+    if (param.files && param.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.src = e.target.result;
+            document.getElementById('texture-img').src = e.target.result;
+            img.onload = function () {
+                texture1 = img; // Assign the loaded image to texture1
+                console.log("Texture 1 loaded successfully");
+                meshDrawer.setTexture(texture1, texture2); // Pass the textures to the shader
+                DrawScene();
+            };
+        };
+        reader.readAsDataURL(param.files[0]);
+    }
 }
+
+// Function to handle the second texture
+function LoadTexture2(param) {
+    if (param.files && param.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = function () {
+                texture2 = img; // Assign the loaded image to texture2
+                console.log("Texture 2 loaded successfully");
+                meshDrawer.setTexture(texture1, texture2); // Pass the textures to the shader
+                DrawScene();
+            };
+        };
+        reader.readAsDataURL(param.files[0]);
+    }
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 </script>
